@@ -1,4 +1,6 @@
 from __future__ import annotations
+import math
+from this import d
 import numpy as np
 from numpy.linalg import inv, det, slogdet
 
@@ -32,6 +34,14 @@ class UnivariateGaussian:
         """
         self.biased_ = biased_var
         self.fitted_, self.mu_, self.var_ = False, None, None
+    
+    @property
+    def mu(self):
+        return self.mu_
+    
+    @property
+    def var(self):
+        return self.var_
 
     def fit(self, X: np.ndarray) -> UnivariateGaussian:
         """
@@ -51,10 +61,21 @@ class UnivariateGaussian:
         Sets `self.mu_`, `self.var_` attributes according to calculated estimation (where
         estimator is either biased or unbiased). Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
-
+        self.mu_ = np.mean(X)
+        '''
+        if self._biased:
+            # TODO: fix
+            self.var_ = np.var(X)
+        else:
+            self.var_ = np.var(X)
+        '''
+        self.var_ = np.var(X)
         self.fitted_ = True
         return self
+
+    def calc_pdf(self, mu, var, x):
+        sigma = math.sqrt(var)
+        return (1/(sigma*math.sqrt(2*math.pi)))*(math.e**(-0.5*((x-mu)/sigma)**2))
 
     def pdf(self, X: np.ndarray) -> np.ndarray:
         """
@@ -76,7 +97,7 @@ class UnivariateGaussian:
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
-        raise NotImplementedError()
+        return np.vectorize(self.calc_pdf)(self.mu, self.var, X)
 
     @staticmethod
     def log_likelihood(mu: float, sigma: float, X: np.ndarray) -> float:
@@ -143,8 +164,8 @@ class MultivariateGaussian:
         Sets `self.mu_`, `self.cov_` attributes according to calculated estimation.
         Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
-
+        self.mu_ = np.mean(X, axis=0) # Get mean by column
+        self.cov_ = np.cov(X, rowvar=False)
         self.fitted_ = True
         return self
 
