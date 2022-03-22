@@ -4,6 +4,7 @@ import numpy as np
 import plotly
 import plotly.graph_objects as go
 import plotly.io as pio
+import plotly.express as px
 pio.templates.default = "simple_white"
 
 
@@ -44,17 +45,20 @@ def test_multivariate_gaussian():
     print(multi.cov)
     
     # Question 5 - Likelihood evaluation
-    log_likelihood_matrix = np.array([]) 
-    values = np.linspace(-10, 10, 200)
-    # TODO: Change to something different not using loops
-    for v_i in values:
-        for v_j in values:
-            log_likelihood_matrix.append(multi.log_likelihood(mu=np.array([v_i, 0, v_j, 0]), cov=sigma, X=X))
+    log_likelihood_matrix = []
+    f1 = np.linspace(-10, 10, 200)
+    f3 = np.linspace(-10, 10, 200)
+    # TODO: Change to something different not using loops (maybe insert to one arr and the resize)
+    for v_i in f1:
+        row_values = []
+        for v_j in f3:
+            row_values.append(multi.log_likelihood(mu=np.array([v_i, 0, v_j, 0]), cov=sigma, X=X))
+        log_likelihood_matrix.append(row_values)
     
+    go.Figure(go.Heatmap(x=f1, y=f3, z=log_likelihood_matrix)).show()
     
     # Question 6 - Maximum likelihood
-    raise NotImplementedError()
-
+    
 
 if __name__ == '__main__':
     np.random.seed(0)
