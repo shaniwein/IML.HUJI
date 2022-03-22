@@ -1,3 +1,4 @@
+from sklearn.covariance import log_likelihood
 from IMLearn.learners import UnivariateGaussian, MultivariateGaussian
 import numpy as np
 import plotly
@@ -30,11 +31,27 @@ def test_univariate_gaussian():
 
 def test_multivariate_gaussian():
     # Question 4 - Draw samples and print fitted model
-    raise NotImplementedError()
-
+    mu = np.array([0, 0, 4, 0])
+    sigma = np.array([
+        np.array([1, 0.2, 0, 0.5]),
+        np.array([0.2, 2, 0, 0]),
+        np.array([0, 0, 1, 0]),
+        np.array([0.5, 0, 0, 1])
+    ])
+    X = np.random.multivariate_normal(mean=mu, cov=sigma, size=1000)
+    multi = MultivariateGaussian().fit(X)
+    print(multi.mu)
+    print(multi.cov)
+    
     # Question 5 - Likelihood evaluation
-    raise NotImplementedError()
-
+    log_likelihood_matrix = np.array([]) 
+    values = np.linspace(-10, 10, 200)
+    # TODO: Change to something different not using loops
+    for v_i in values:
+        for v_j in values:
+            log_likelihood_matrix.append(multi.log_likelihood(mu=np.array([v_i, 0, v_j, 0]), cov=sigma, X=X))
+    
+    
     # Question 6 - Maximum likelihood
     raise NotImplementedError()
 
@@ -42,4 +59,4 @@ def test_multivariate_gaussian():
 if __name__ == '__main__':
     np.random.seed(0)
     test_univariate_gaussian()
-    # test_multivariate_gaussian()
+    test_multivariate_gaussian()

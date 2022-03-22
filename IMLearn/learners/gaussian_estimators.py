@@ -64,7 +64,6 @@ class UnivariateGaussian:
         self.mu_ = np.mean(X)
         '''
         if self._biased:
-            # TODO: fix
             self.var_ = np.var(X)
         else:
             self.var_ = np.var(X)
@@ -118,8 +117,9 @@ class UnivariateGaussian:
         log_likelihood: float
             log-likelihood calculated
         """
-        raise NotImplementedError()
-
+        m = X.shape[0]
+        log_sqr_sigma = 2*sigma
+        return (-m/2) * math.log(log_sqr_sigma*math.pi) - (1/log_sqr_sigma)*np.sum(np.power(X-mu, 2))        
 
 class MultivariateGaussian:
     """
@@ -145,6 +145,14 @@ class MultivariateGaussian:
         """
         self.mu_, self.cov_ = None, None
         self.fitted_ = False
+    
+    @property
+    def mu(self):
+        return self.mu_
+    
+    @property
+    def cov(self):
+        return self.cov_
 
     def fit(self, X: np.ndarray) -> MultivariateGaussian:
         """
