@@ -62,13 +62,10 @@ class UnivariateGaussian:
         estimator is either biased or unbiased). Then sets `self.fitted_` attribute to `True`
         """
         self.mu_ = np.mean(X)
-        '''
-        if self._biased:
+        if self.biased_:
             self.var_ = np.var(X)
         else:
-            self.var_ = np.var(X)
-        '''
-        self.var_ = np.var(X)
+            self.var_ = np.var(X, ddof=1)
         self.fitted_ = True
         return self
 
@@ -226,7 +223,6 @@ class MultivariateGaussian:
         d = len(cov)
         p = len(cov[0])
         sign, logdet = slogdet(cov)
-        #matrix_product = (np.transpose(X-mu)@inv(cov))@(X-mu)
         matrix_product = np.sum((X-mu)@inv(cov)*(X-mu))
         return -0.5 * (d*p*math.log(2*math.pi) + d*sign*logdet+matrix_product)
-        # return -0.5*(d*math.log(2*math.pi)+math.log(det(cov))+matrix_product)
+
