@@ -74,7 +74,7 @@ class UnivariateGaussian:
 
     def calc_pdf(self, mu, var, x):
         sigma = math.sqrt(var)
-        return (1/(sigma*math.sqrt(2*math.pi)))*(math.e**(-0.5*((x-mu)/sigma)**2))
+        return (1 / (sigma*math.sqrt(2*math.pi))) * (math.e**(-0.5 * math.pow(((x-mu)/sigma), 2)))
 
     def pdf(self, X: np.ndarray) -> np.ndarray:
         """
@@ -119,7 +119,7 @@ class UnivariateGaussian:
         """
         m = X.shape[0]
         log_sqr_sigma = 2*sigma
-        return (-m/2) * math.log(log_sqr_sigma*math.pi) - (1/log_sqr_sigma)*np.sum(math.pow(X-mu, 2))        
+        return (-m/2) * math.log(log_sqr_sigma*math.pi) -(1/log_sqr_sigma)*np.sum(math.pow(X-mu, 2))
 
 class MultivariateGaussian:
     """
@@ -180,7 +180,7 @@ class MultivariateGaussian:
     def calc_pdf(mu, cov, X):
         d = len(cov)
         matrix_product = np.transpose(X-mu)@inv(cov)@(X-mu)
-        return (1/math.sqrt(math.pow(2*math.pi, d)*det(cov)))*math.exp(-0.5*matrix_product)
+        return (1/math.sqrt(math.pow(2*math.pi, d)*det(cov))) * math.exp(-0.5*matrix_product)
 
     def pdf(self, X: np.ndarray):
         """
@@ -227,6 +227,6 @@ class MultivariateGaussian:
         p = len(cov[0])
         sign, logdet = slogdet(cov)
         #matrix_product = (np.transpose(X-mu)@inv(cov))@(X-mu)
-        matrix_product = np.sum((X-mu) @ inv(cov) * (X-mu))
-        return -0.5*(d*p*math.log(2*math.pi)+d*sign*logdet+matrix_product)
+        matrix_product = np.sum((X-mu)@inv(cov)*(X-mu))
+        return -0.5 * (d*p*math.log(2*math.pi) + d*sign*logdet+matrix_product)
         # return -0.5*(d*math.log(2*math.pi)+math.log(det(cov))+matrix_product)
