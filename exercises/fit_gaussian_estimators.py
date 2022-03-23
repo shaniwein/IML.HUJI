@@ -4,6 +4,7 @@ import numpy as np
 import plotly
 import plotly.graph_objects as go
 import plotly.io as pio
+import math
 pio.templates.default = "simple_white"
 
 
@@ -18,18 +19,22 @@ def test_univariate_gaussian():
     sizes = np.arange(10, 1010, step=10)
     fixed_by_size = np.vectorize(lambda size: np.abs(uni.fit(X[:size]).mu-origin_mu))(sizes)
     fig = go.Figure(
-        layout_title_text = 'Distance from Mean by Sample Size',
-        x = 'Sample Size',
-        y = 'Absolute Distance of Estimated and True Expectation',
-        data = go.Bar(x=sizes, y=fixed_by_size),
+        layout = go.Layout(
+            title = 'Distance from Mean by Sample Size',
+            xaxis = dict(title='Sample Size'),
+            yaxis = dict(title='Absolute Distance of Estimated and True Expectation'),
+        ),
+        data = [go.Bar(x=sizes, y=fixed_by_size)],
     ).show()
     
     # Question 3 - Plotting Empirical PDF of fitted model
     fig = go.Figure(
-        layout_title_text = 'Empirical PDF of Fitted Model',
-        x = 'Ordered Sample Values',
-        y = 'PDF',
-        data = go.Scatter(x=X, y=uni.pdf(X), color='petal_length'),
+        layout = go.Layout(
+            title = 'Empirical PDF of Fitted Model',
+            xaxis = dict(title='Ordered Sample Values'),
+            yaxis = dict(title='PDF'),
+        ),
+        data = go.Scatter(x=X, y=uni.pdf(X), mode='markers'),
     ).show() 
 
 def test_multivariate_gaussian():
@@ -47,7 +52,7 @@ def test_multivariate_gaussian():
     print(multi.cov)
     
     # Question 5 - Likelihood evaluation
-    max_log_lh = (None, 0) # For q6: (<pair>, <log lh val>)
+    max_log_lh = (None, -math.inf) # For q6: (<pair>, <log lh val>)
     log_likelihood_matrix = []
     
     f1 = np.linspace(-10, 10, 200)
@@ -63,9 +68,11 @@ def test_multivariate_gaussian():
         log_likelihood_matrix.append(row_values)
     
     go.Figure(
-        layout_title_text = 'Log Likelihood Heatmap',
-        x = 'f1 (All values between -10 to 10 with steps of 200)',
-        y = 'f3 (All values between -10 to 10 with steps of 200)',
+        layout = go.Layout(
+            title = 'Log Likelihood Heatmap',
+            xaxis = dict(title='f1 (All values between -10 to 10 with steps of 200)'),
+            yaxis = dict(title='f3 (All values between -10 to 10 with steps of 200)'),
+        ),
         data = go.Heatmap(x=f1, y=f3, z=log_likelihood_matrix),
     ).show()
     
