@@ -1,6 +1,9 @@
+from enum import unique
 from IMLearn.utils import split_train_test
 from IMLearn.learners.regressors import LinearRegression
 
+import math
+import os
 from typing import NoReturn
 import numpy as np
 import pandas as pd
@@ -9,6 +12,31 @@ import plotly.express as px
 import plotly.io as pio
 pio.templates.default = "simple_white"
 
+DATE_FORMAT = '%Y%m%dT%H%M%S'
+NON_ZERO_COLS = ['sqft_living', 'sqft_lot', 'yr_built', 'sqft_living15', 'sqft_lot15']
+
+def parse_date(x):
+    try:
+        return pd.to_datetime(x, format=DATE_FORMAT).timestamp()
+    except ValueError:
+        return None
+
+def preprocess_data(df):
+    df = df.drop_duplicates().dropna()
+    df['timestamp'] = df['date'].apply(parse_date)
+    df = df.dropna()
+    df = df.drop(['id', 'date', 'lat', 'long', 'zipcode'], axis=1)
+    for col_name in df.columns:
+        limit = 1 if col_name in NON_ZERO_COLS else 0
+        df.drop(df[df[col_name] < limit].index, inplace=True)
+    '''
+    # Handle zipcode
+    zip_to_price = df[['zipcode', 'price']].groupby(['zipcode']).mean()
+    print(zip_to_price)
+    df = df.merge(zip_to_price, how='left')
+    print(df.columns)
+    '''
+    return df
 
 def load_data(filename: str):
     """
@@ -23,8 +51,9 @@ def load_data(filename: str):
     Design matrix and response vector (prices) - either as a single
     DataFrame or a Tuple[DataFrame, Series]
     """
-    raise NotImplementedError()
-
+    df = pd.read_csv(filename)
+    df = preprocess_data(df)
+    return df.drop(['price'], axis=1), df['price']
 
 def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") -> NoReturn:
     """
@@ -43,20 +72,29 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
     output_path: str (default ".")
         Path to folder in which plots are saved
     """
-    raise NotImplementedError()
-
+    for col_name, col_data in X.iteritems():
+        # cov = np.mean(col_data*y) - np.mean(col_data)*np.mean(y)
+        p_corr = np.cov(col_data, y)[0][1] / (np.std(col_data) * np.std(y))
+        fig = go.Figure(
+            layout = go.Layout(
+                title = f'Pearson Correlation between {col_name} and price: {p_corr}',
+            ),
+            data = go.Scatter(x=col_data, y=y, mode='markers')
+        )
+        fig.write_image(os.path.join(output_path, f'{col_name}_plot.png'))
 
 if __name__ == '__main__':
     np.random.seed(0)
     # Question 1 - Load and preprocessing of housing prices dataset
-    raise NotImplementedError()
+    X, y = load_data('../datasets/house_prices.csv')
 
     # Question 2 - Feature evaluation with respect to response
-    raise NotImplementedError()
+    # feature_evaluation(X, y)
+    # TODO: Print high corr- sqft_living, low corr- date or condition
 
     # Question 3 - Split samples into training- and testing sets.
-    raise NotImplementedError()
-
+    X_train, y_train, X_test, y_test = split_train_test(X, y, 0.75)
+    
     # Question 4 - Fit model over increasing percentages of the overall training data
     # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
     #   1) Sample p% of the overall training data
@@ -64,4 +102,5 @@ if __name__ == '__main__':
     #   3) Test fitted model over test set
     #   4) Store average and variance of loss over test set
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
-    raise NotImplementedError()
+    for p in range(10, 100):
+        pd.DataFrame.sample(frac=p/100)
