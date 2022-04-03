@@ -2,7 +2,6 @@ from enum import unique
 from IMLearn.utils import split_train_test
 from IMLearn.learners.regressors import LinearRegression
 
-import math
 import os
 from typing import NoReturn
 import numpy as np
@@ -23,6 +22,7 @@ def parse_date(x):
 
 def preprocess_data(df):
     df = df.drop_duplicates().dropna()
+    # TODO: Maybe remove (try dealing in load data)
     df['timestamp'] = df['date'].apply(parse_date)
     df = df.dropna()
     df = df.drop(['id', 'date', 'lat', 'long', 'zipcode'], axis=1)
@@ -51,7 +51,7 @@ def load_data(filename: str):
     Design matrix and response vector (prices) - either as a single
     DataFrame or a Tuple[DataFrame, Series]
     """
-    df = pd.read_csv(filename)
+    df = pd.read_csv(filename, parse_dates=['date'])
     df = preprocess_data(df)
     return df.drop(['price'], axis=1), df['price']
 
@@ -102,5 +102,16 @@ if __name__ == '__main__':
     #   3) Test fitted model over test set
     #   4) Store average and variance of loss over test set
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
+    
+    # TODO: Fix and plot!!
+    
+    lr = LinearRegression()
+    all_loss = np.array([])
     for p in range(10, 100):
-        pd.DataFrame.sample(frac=p/100)
+        p_loss = np.array([])
+        for _ in range(10):
+            X_sample = X_train.sample(frac=p/100)
+            y_sample = y_train[y_train.index.isin(X_sample.index)]
+            lr.fit(X_sample, y_sample)
+            p_loss = np.append(p_loss, lr.loss(X_test, y_test))
+        all_loss = np.append(all_loss, p_loss.mean())

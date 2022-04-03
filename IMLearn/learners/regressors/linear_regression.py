@@ -50,15 +50,16 @@ class LinearRegression(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
-        if self.include_intercept_:
-            X = (1, X)
-        # The singular case (non invertible)
-        if det(X):
+        # TODO: ???!?!?
+        #if self.include_intercept_:
+        #    X = (1, X)
+        try:
+            # The singular case (non invertible)
+            det(X)
             self.coefs_ = pinv(X) @ y
-        # The non-singular case (invertible)
-        else:
+        except np.linalg.LinAlgError:
+            # The non-singular case (invertible)
             self.coefs_ = inv(np.transpose(X) @ X) @ np.transpose(X) @ y
-
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -74,10 +75,11 @@ class LinearRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        return np.transpose(X) @ self.coefs_
+        return X * self.coefs_
+        # return np.transpose(X) @ self.coefs_
 
-    def _calc_mse_loss(self, x):
-        return mean_square_error(x, self.predict(x))
+    def _calc_mse_loss(self, X, y):
+        return mean_square_error(y, self.predict(X))
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -96,4 +98,7 @@ class LinearRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        return np.sum(np.vectorize(self._calc_mse_loss)(X)) / len(y)
+        # TODO Fix!
+        res = np.sum(self._calc_mse_loss(X, y)) / len(y)
+        return res
+        # return np.sum(np.vectorize(self._calc_mse_loss)(X)) / len(y)
