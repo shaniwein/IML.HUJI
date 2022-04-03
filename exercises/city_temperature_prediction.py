@@ -9,10 +9,12 @@ import plotly.io as pio
 pio.templates.default = "simple_white"
 
 LABEL_COL = 'Temp'
+TEMP_LIMIT = -70
 
 def preprocess_data(df):
     df = df.drop_duplicates().dropna()
     # TODO: Drop temp under/above some value? df.drop(df[df[''] < limit].index, inplace=True)
+    df.drop(df[df['Temp'] < TEMP_LIMIT].index, inplace=True)
     df['DayOfYear'] = df['Date'].dt.dayofyear
     return df
 
@@ -41,11 +43,15 @@ if __name__ == '__main__':
     # Question 2 - Exploring data for specific country
     israel_data = df[df['Country'] == 'Israel']
     px.scatter(israel_data, x=israel_data['DayOfYear'], y=israel_data['Temp'], color=israel_data['Year']).show()
+    grouped_data = israel_data[['Month', 'Temp']].groupby('Month').Temp.agg('std')
+    # TODO: Change y axis title to std
+    print(grouped_data)
+    px.bar(grouped_data, x=grouped_data.index, y=grouped_data).show()
     
-    # TODO: Group by month
     # Question 3 - Exploring differences between countries
-    raise NotImplementedError()
-
+    grouped_data = df.groupby(['Country', 'Month']).Temp.agg(['mean', 'std'])
+    print(grouped_data.index[:][1])
+    px.line(grouped_data, x=grouped_data['Month'], y=grouped_data['mean'], error_y=grouped_data['std'], color=grouped_data['Country']).show()
     # Question 4 - Fitting model for different values of `k`
     raise NotImplementedError()
 
