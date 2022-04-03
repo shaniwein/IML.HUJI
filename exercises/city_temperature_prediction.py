@@ -8,6 +8,13 @@ import plotly.express as px
 import plotly.io as pio
 pio.templates.default = "simple_white"
 
+LABEL_COL = 'Temp'
+
+def preprocess_data(df):
+    df = df.drop_duplicates().dropna()
+    # TODO: Drop temp under/above some value? df.drop(df[df[''] < limit].index, inplace=True)
+    df['DayOfYear'] = df['Date'].dt.dayofyear
+    return df
 
 def load_data(filename: str) -> pd.DataFrame:
     """
@@ -21,17 +28,21 @@ def load_data(filename: str) -> pd.DataFrame:
     -------
     Design matrix and response vector (Temp)
     """
-    raise NotImplementedError()
-
+    df = pd.read_csv(filename, parse_dates=['Date'])
+    df = preprocess_data(df)
+    df.insert(len(df.columns)-1, LABEL_COL, df.pop(LABEL_COL))
+    return df
 
 if __name__ == '__main__':
     np.random.seed(0)
     # Question 1 - Load and preprocessing of city temperature dataset
-    raise NotImplementedError()
-
+    df = load_data('../datasets/City_Temperature.csv')
+    
     # Question 2 - Exploring data for specific country
-    raise NotImplementedError()
-
+    israel_data = df[df['Country'] == 'Israel']
+    px.scatter(israel_data, x=israel_data['DayOfYear'], y=israel_data['Temp'], color=israel_data['Year']).show()
+    
+    # TODO: Group by month
     # Question 3 - Exploring differences between countries
     raise NotImplementedError()
 
