@@ -13,6 +13,7 @@ pio.templates.default = "simple_white"
 
 DATE_FORMAT = '%Y%m%dT%H%M%S'
 NON_ZERO_COLS = ['sqft_living', 'sqft_lot', 'yr_built', 'sqft_living15', 'sqft_lot15']
+ZIPCODE_PREFIX = 'zipcode_'
 
 def parse_date(x):
     try:
@@ -22,20 +23,18 @@ def parse_date(x):
 
 def preprocess_data(df):
     df = df.drop_duplicates().dropna()
-    # TODO: Maybe remove (try dealing in load data)
     df['timestamp'] = df['date'].apply(parse_date)
     df = df.dropna()
-    df = df.drop(['id', 'date', 'lat', 'long', 'zipcode'], axis=1)
+    df['max_renovated'] = df[['yr_renovated', 'yr_built']].max(axis=1)
+    df = df.drop(['id', 'date', 'lat', 'long', 'yr_renovated'], axis=1)
     for col_name in df.columns:
         limit = 1 if col_name in NON_ZERO_COLS else 0
         df.drop(df[df[col_name] < limit].index, inplace=True)
-    '''
-    # Handle zipcode
-    zip_to_price = df[['zipcode', 'price']].groupby(['zipcode']).mean()
-    print(zip_to_price)
-    df = df.merge(zip_to_price, how='left')
-    print(df.columns)
-    '''
+    df = pd.get_dummies(df, prefix=ZIPCODE_PREFIX, columns=['zipcode'], drop_first=True)
+    # TODO:
+    #   1. Add dummies for zipcode
+    #   2. Get rid of how with too many rooms
+    #   3. Change renovated to the max between renovated and built
     return df
 
 def load_data(filename: str):
@@ -51,7 +50,7 @@ def load_data(filename: str):
     Design matrix and response vector (prices) - either as a single
     DataFrame or a Tuple[DataFrame, Series]
     """
-    df = pd.read_csv(filename, parse_dates=['date'])
+    df = pd.read_csv(filename)
     df = preprocess_data(df)
     return df.drop(['price'], axis=1), df['price']
 
@@ -73,6 +72,8 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
         Path to folder in which plots are saved
     """
     for col_name, col_data in X.iteritems():
+        if col_name.startwith(ZIPCODE_PREFIX):
+            continue
         # cov = np.mean(col_data*y) - np.mean(col_data)*np.mean(y)
         p_corr = np.cov(col_data, y)[0][1] / (np.std(col_data) * np.std(y))
         fig = go.Figure(
@@ -89,7 +90,7 @@ if __name__ == '__main__':
     X, y = load_data('../datasets/house_prices.csv')
 
     # Question 2 - Feature evaluation with respect to response
-    # feature_evaluation(X, y)
+    feature_evaluation(X, y)
     # TODO: Print high corr- sqft_living, low corr- date or condition
 
     # Question 3 - Split samples into training- and testing sets.
