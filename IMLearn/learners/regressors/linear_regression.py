@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import NoReturn
-from ...base import BaseEstimator
+from IMLearn.base import BaseEstimator
 import numpy as np
 from numpy.linalg import pinv, det, inv
 from IMLearn.metrics.loss_functions import mean_square_error
@@ -50,17 +50,10 @@ class LinearRegression(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
-        # TODO: ???!?!?
-        #if self.include_intercept_:
-        #    X = (1, X)
-        try:
-            # The singular case (non invertible)
-            det(X)
-            self.coefs_ = pinv(X) @ y
-        except np.linalg.LinAlgError:
-            # The non-singular case (invertible)
-            self.coefs_ = inv(np.transpose(X) @ X) @ np.transpose(X) @ y
-
+        if self.include_intercept_:
+            X = np.concatenate((np.ones((len(X), 1)), X), axis=1)
+        self.coefs_ = pinv(X) @ y
+    
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predict responses for given samples using fitted estimator
@@ -75,11 +68,8 @@ class LinearRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        return X * self.coefs_
-        # return np.transpose(X) @ self.coefs_
-
-    def _calc_mse_loss(self, X, y):
-        return mean_square_error(y, self.predict(X))
+        intercept, w = self.coefs_[0], self.coefs_[1:]
+        return intercept + (X @ w) if self.include_intercept_ else X @ self.coefs_
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -98,7 +88,5 @@ class LinearRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        # TODO Fix!
-        res = np.sum(self._calc_mse_loss(X, y)) / len(y)
-        return res
-        # return np.sum(np.vectorize(self._calc_mse_loss)(X)) / len(y)
+        y_hat = self.predict(X)
+        return mean_square_error(y, y_hat) 
