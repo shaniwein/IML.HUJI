@@ -11,6 +11,7 @@ import plotly.express as px
 import plotly.io as pio
 pio.templates.default = "simple_white"
 
+DATASET_PATH = '/home/shani/iml_course/IML.HUJI/datasets/house_prices.csv'
 DATE_FORMAT = '%Y%m%dT%H%M%S'
 NON_ZERO_COLS = ['sqft_living', 'sqft_lot', 'yr_built', 'sqft_living15', 'sqft_lot15']
 ZIPCODE_PREFIX = 'zipcode_'
@@ -72,9 +73,8 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
         Path to folder in which plots are saved
     """
     for col_name, col_data in X.iteritems():
-        if col_name.startwith(ZIPCODE_PREFIX):
+        if col_name.startswith(ZIPCODE_PREFIX):
             continue
-        # cov = np.mean(col_data*y) - np.mean(col_data)*np.mean(y)
         p_corr = np.cov(col_data, y)[0][1] / (np.std(col_data) * np.std(y))
         fig = go.Figure(
             layout = go.Layout(
@@ -87,11 +87,10 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
 if __name__ == '__main__':
     np.random.seed(0)
     # Question 1 - Load and preprocessing of housing prices dataset
-    X, y = load_data('../datasets/house_prices.csv')
+    X, y = load_data(DATASET_PATH)
 
     # Question 2 - Feature evaluation with respect to response
     feature_evaluation(X, y)
-    # TODO: Print high corr- sqft_living, low corr- date or condition
 
     # Question 3 - Split samples into training- and testing sets.
     X_train, y_train, X_test, y_test = split_train_test(X, y, 0.75)
@@ -103,16 +102,23 @@ if __name__ == '__main__':
     #   3) Test fitted model over test set
     #   4) Store average and variance of loss over test set
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
-    
-    # TODO: Fix and plot!!
-    
-    lr = LinearRegression()
-    all_loss = np.array([])
-    for p in range(10, 100):
+    all_loss_mean = np.array([])
+    all_loss_stdv = np.array([])
+    for p in np.arange(10, 101):
         p_loss = np.array([])
         for _ in range(10):
             X_sample = X_train.sample(frac=p/100)
             y_sample = y_train[y_train.index.isin(X_sample.index)]
-            lr.fit(X_sample, y_sample)
-            p_loss = np.append(p_loss, lr.loss(X_test, y_test))
-        all_loss = np.append(all_loss, p_loss.mean())
+            lr_model = LinearRegression()
+            lr_model.fit(X_sample, y_sample)
+            p_loss = np.append(p_loss, lr_model.loss(X_test, y_test))
+        all_loss_mean = np.append(all_loss_mean, p_loss.mean())
+        all_loss_stdv = np.append(all_loss_stdv, p_loss.std())
+    fig = go.Figure(
+        data = go.Scatter(x=np.arange(10, 101), y=all_loss_mean, marker_color='rgb(55, 83, 109)')
+    )
+    fig.add_traces([
+        go.Scatter(x=np.arange(10, 101), y=all_loss_mean+(2*all_loss_stdv), mode='lines', line_color='rgba(0,0,0,0)', fill='tonexty'),
+        go.Scatter(x=np.arange(10, 101), y=all_loss_mean-(2*all_loss_stdv), mode='lines', line_color='rgba(0,0,0,0)', showlegend=False),
+    ])
+    fig.show()
