@@ -70,7 +70,7 @@ class LinearRegression(BaseEstimator):
         """
         intercept, w = self.coefs_[0], self.coefs_[1:]
         return intercept + (X @ w) if self.include_intercept_ else X @ self.coefs_
-
+    
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
         Evaluate performance under MSE loss function
@@ -88,5 +88,5 @@ class LinearRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        y_hat = self.predict(X)
-        return mean_square_error(y, y_hat) 
+        predicted_y = self.predict(X)
+        return mean_square_error(y, predicted_y) 
