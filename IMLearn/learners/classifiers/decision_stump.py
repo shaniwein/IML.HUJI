@@ -47,7 +47,11 @@ class DecisionStump(BaseEstimator):
         self.sign_ = 1
         min_thr = None
         for i, col in enumerate(X.T):
-            thr, thr_err = self._find_threshold(col, y, self.sign_)
+            pos_thr, pos_thr_err = self._find_threshold(col, y, self.sign_)
+            neg_thr, neg_thr_err = self._find_threshold(col, y, -self.sign_)
+            thr = neg_thr if neg_thr_err < pos_thr_err else pos_thr
+            thr_err = neg_thr_err if neg_thr_err < pos_thr_err else pos_thr_err
+            self.sign_ = -self.sign_ if neg_thr_err < pos_thr_err else self.sign_ 
             if not min_thr or thr_err < min_thr.error:
                 min_thr = Threshold(threshold=thr, error=thr_err, feat_idx=i)
         self.threshold_ = min_thr.threshold
@@ -75,8 +79,8 @@ class DecisionStump(BaseEstimator):
         Feature values strictly below threshold are predicted as `-sign` whereas values which equal
         to or above the threshold are predicted as `sign`
         """
-        condition = X[:, self.j] < self.threshold_
-        return np.array([self.sign_ if c else -self.sign_ for c in condition])
+        condition = X[:, self.j_] < self.threshold_
+        return np.where(condition, -self.sign_, self.sign_)
 
     def _find_threshold(self, values: np.ndarray, labels: np.ndarray, sign: int) -> Tuple[float, float]:
         """
@@ -108,12 +112,24 @@ class DecisionStump(BaseEstimator):
         For every tested threshold, values strictly below threshold are predicted as `-sign` whereas values
         which equal to or above the threshold are predicted as `sign`
         """
+        '''
         min_loss = None
         for val in unique(values):
             err =  misclassification_error(labels, values) 
             if not min_loss or err < min_loss.error:
                 min_loss = Threshold(threshold=val, error=err, feat_idx=None)
         return min_loss.threshold, min_loss.error
+        '''
+        # Sort the values and labels by the values order
+        values_sorted_indexes = np.argsort(values)
+        values = values[values_sorted_indexes]
+        labels = labels[values_sorted_indexes]
+        mis_error = misclassification_error(labels, values)
+        # thr_err = np.sum(np.abs(labels[np.sign(labels) == sign]))
+        threshold = np.concatenate([[-np.inf], (values[1:] + values[:-1])/2, [np.inf]])
+        losses = np.append(mis_error, mis_error-np.cumsum(sign*labels))
+        min_loss = np.argmin(losses)
+        return (threshold[min_loss], losses[min_loss])
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
