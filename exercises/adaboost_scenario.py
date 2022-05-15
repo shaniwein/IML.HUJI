@@ -1,7 +1,9 @@
 import numpy as np
 from typing import Tuple
-from IMLearn.learners.metalearners.adaboost import AdaBoost
+from IMLearn.metalearners.adaboost import AdaBoost
+# from IMLearn.learners.metalearners.adaboost import AdaBoost
 from IMLearn.learners.classifiers import DecisionStump
+from IMLearn.metrics import accuracy
 from utils import *
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -42,20 +44,77 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     (train_X, train_y), (test_X, test_y) = generate_data(train_size, noise), generate_data(test_size, noise)
 
     # Question 1: Train- and test errors of AdaBoost in noiseless case
-    raise NotImplementedError()
+    meta_learner = AdaBoost(wl=DecisionStump, iterations=n_learners)
+    meta_learner.fit(train_X, train_y)
 
+    fig = go.Figure(layout=dict(
+        title = 'Train and Test Errors as a Function of Number of Learners'),
+        #xaxis_title = 'Number of Learners',
+        #yaxis_title = 'Error',
+    )
+    x_values = list(range(1, n_learners))
+    y_values_train = [meta_learner.partial_loss(train_X, train_y, t) for t in range(1, n_learners)]
+    y_values_test = [meta_learner.partial_loss(test_X, test_y, t) for t in range(1, n_learners)]
+    fig.add_trace(
+        go.Scatter(x=x_values, y=y_values_train, marker=dict(color='blue'), name='Train Set'),
+    ) 
+    fig.add_trace(
+        go.Scatter(x=x_values, y=y_values_test, marker=dict(color='green'), name='Test Set'),
+    )
+    #fig.show()
+    
     # Question 2: Plotting decision surfaces
     T = [5, 50, 100, 250]
     lims = np.array([np.r_[train_X, test_X].min(axis=0), np.r_[train_X, test_X].max(axis=0)]).T + np.array([-.1, .1])
-    raise NotImplementedError()
+    fig = make_subplots(rows=2, cols=2, subplot_titles=[rf"$\textbf{{{m}}}$" for m in T],
+                        horizontal_spacing = 0.01, vertical_spacing=.03)
+    for i, t in enumerate(T):
+        fig.add_traces([
+            decision_surface(lambda x: meta_learner.partial_predict(x, t), lims[0], lims[1], showscale=False),
+            go.Scatter(
+                x=test_X[:,0], y=test_X[:,1], mode="markers", showlegend=False,
+                marker=dict(color=test_y, colorscale=[custom[0], custom[-1]], 
+                line=dict(color="black", width=1))
+            )
+        ], 
+        rows=(i//2) + 1,
+        cols=(i%2)+1
+        )
+    fig.update_layout(title=rf"$\textbf{{Decision Boundaries by Number of Learners}}$", margin=dict(t=100))\
+        .update_xaxes(visible=False).update_yaxes(visible=False)
+    #fig.show()
 
     # Question 3: Decision surface of best performing ensemble
-    raise NotImplementedError()
-
+    best_t = None
+    best_value = None
+    for t in range(1, n_learners):
+        loss = meta_learner.partial_loss(test_X, test_y, t) 
+        if not best_value or loss < best_value:
+            best_t, best_value = t, loss
+    print(f'best: {best_t}, acc: {accuracy(test_y, meta_learner.partial_predict(test_X, best_t))}')
+    fig = go.Figure()
+    fig.add_trace(decision_surface(lambda x: meta_learner.partial_predict(x, best_t), lims[0], lims[1], showscale=False))
+    fig.show() 
     # Question 4: Decision surface with weighted samples
-    raise NotImplementedError()
-
+    '''
+    print (f'weights: {meta_learner.weights_}, type: {type(meta_learner.weights_)}')
+    weights = meta_learner.weights_ / np.max(meta_learner.weights_) * 5
+    print(weights)
+    fig = go.Figure()
+    fig.add_trace(
+        decision_surface(meta_learner.predict, lims[0], lims[1], showscale=False),
+        go.Scatter(
+            x=train_X[:,0], y=train_X[:,1], mode="markers", showlegend=False,
+            marker=dict(size=weights ,color=train_y, colorscale=[custom[0], custom[-1]], 
+            # marker=dict(color=train_y, symbol=class_symbols[train_y], colorscale=[custom[0], custom[-1]], 
+            line=dict(color="black", width=1))
+        ) 
+    )
+    fig.show()
+    '''
 
 if __name__ == '__main__':
     np.random.seed(0)
-    raise NotImplementedError()
+    # for noise in (0, 0.4):
+    #for noise in (0, 0.4):
+    fit_and_evaluate_adaboost(noise=0)
