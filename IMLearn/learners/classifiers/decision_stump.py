@@ -124,8 +124,7 @@ class DecisionStump(BaseEstimator):
         values_sorted_indexes = np.argsort(values)
         values = values[values_sorted_indexes]
         labels = labels[values_sorted_indexes]
-        mis_error = misclassification_error(labels, values)
-        # thr_err = np.sum(np.abs(labels[np.sign(labels) == sign]))
+        mis_error = np.sum(np.abs(labels[np.sign(labels) == sign]))
         threshold = np.concatenate([[-np.inf], (values[1:] + values[:-1])/2, [np.inf]])
         losses = np.append(mis_error, mis_error-np.cumsum(sign*labels))
         min_loss = np.argmin(losses)

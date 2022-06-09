@@ -47,10 +47,8 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     meta_learner = AdaBoost(wl=DecisionStump, iterations=n_learners)
     meta_learner.fit(train_X, train_y)
 
-    fig = go.Figure(layout=dict(
+    fig = go.Figure(layout=go.Layout(
         title = 'Train and Test Errors as a Function of Number of Learners'),
-        #xaxis_title = 'Number of Learners',
-        #yaxis_title = 'Error',
     )
     x_values = list(range(1, n_learners))
     y_values_train = [meta_learner.partial_loss(train_X, train_y, t) for t in range(1, n_learners)]
@@ -61,7 +59,8 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
     fig.add_trace(
         go.Scatter(x=x_values, y=y_values_test, marker=dict(color='green'), name='Test Set'),
     )
-    #fig.show()
+    fig.update_xaxes(title='Number of Learners').update_yaxes(title='Errors')
+    fig.show()
     
     # Question 2: Plotting decision surfaces
     T = [5, 50, 100, 250]
@@ -82,7 +81,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
         )
     fig.update_layout(title=rf"$\textbf{{Decision Boundaries by Number of Learners}}$", margin=dict(t=100))\
         .update_xaxes(visible=False).update_yaxes(visible=False)
-    #fig.show()
+    fig.show()
 
     # Question 3: Decision surface of best performing ensemble
     best_t = None
@@ -91,30 +90,35 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
         loss = meta_learner.partial_loss(test_X, test_y, t) 
         if not best_value or loss < best_value:
             best_t, best_value = t, loss
-    print(f'best: {best_t}, acc: {accuracy(test_y, meta_learner.partial_predict(test_X, best_t))}')
-    fig = go.Figure()
-    fig.add_trace(decision_surface(lambda x: meta_learner.partial_predict(x, best_t), lims[0], lims[1], showscale=False))
-    fig.show() 
+    acc = accuracy(test_y, meta_learner.partial_predict(test_X, best_t))
+    fig = go.Figure(layout=go.Layout(
+        title = f'Decision Boundry for Ensemble of size {best_t} with Accuracy {acc}',
+    ))
+    fig.add_traces([
+        decision_surface(lambda x: meta_learner.partial_predict(x, best_t), lims[0], lims[1], showscale=False),
+        go.Scatter(
+            x=test_X[:,0], y=test_X[:,1], mode="markers", showlegend=False,
+            marker=dict(color=test_y, colorscale=[custom[0], custom[-1]], 
+            line=dict(color="black", width=1))
+        )
+    ])
+    fig.show()
+
     # Question 4: Decision surface with weighted samples
-    '''
-    print (f'weights: {meta_learner.weights_}, type: {type(meta_learner.weights_)}')
-    weights = meta_learner.weights_ / np.max(meta_learner.weights_) * 5
-    print(weights)
-    fig = go.Figure()
-    fig.add_trace(
+    fig = go.Figure(layout=go.Layout(title='Decision Surface with Weighted Dots of Training Set'))
+    fig.add_traces([
         decision_surface(meta_learner.predict, lims[0], lims[1], showscale=False),
         go.Scatter(
             x=train_X[:,0], y=train_X[:,1], mode="markers", showlegend=False,
-            marker=dict(size=weights ,color=train_y, colorscale=[custom[0], custom[-1]], 
-            # marker=dict(color=train_y, symbol=class_symbols[train_y], colorscale=[custom[0], custom[-1]], 
-            line=dict(color="black", width=1))
+            marker=dict(
+                color=train_y, colorscale=[custom[0], custom[-1]], line=dict(color="black", width=1),
+                size=meta_learner.D_ / np.max(meta_learner.D_) * 5
+            )
         ) 
-    )
+    ])
     fig.show()
-    '''
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # for noise in (0, 0.4):
-    #for noise in (0, 0.4):
-    fit_and_evaluate_adaboost(noise=0)
+    for noise in (0, 0.4):
+        fit_and_evaluate_adaboost(noise=noise)
