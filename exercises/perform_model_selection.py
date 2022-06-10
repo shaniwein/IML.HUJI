@@ -12,6 +12,13 @@ from utils import *
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+LOW_UNIFORM = -1.2
+HIGH_UNIFORM = 2
+DEFAULT_MU = 0
+K_DEGS = 10
+
+def model_func(x, eps):
+    return (x+3)*(x+2)*(x+1)*(x-1)*(x-2) + eps 
 
 def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     """
@@ -27,14 +34,69 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     """
     # Question 1 - Generate dataset for model f(x)=(x+3)(x+2)(x+1)(x-1)(x-2) + eps for eps Gaussian noise
     # and split into training- and testing portions
-    raise NotImplementedError()
+    x = np.random.uniform(LOW_UNIFORM, HIGH_UNIFORM, size=n_samples)
+    epsilon = np.random.normal(DEFAULT_MU, noise, size=n_samples)
+    y = model_func(x, epsilon)
+    X_train, y_train, X_test, y_test = split_train_test(pd.DataFrame(x), pd.Series(y), train_proportion=2/3)
+    X_train = np.array(X_train).reshape(1, -1)[0]
+    X_test = np.array(X_test).reshape(1, -1)[0]
+    y_train, y_test = np.array(y_train), np.array(y_test)
+    fig = go.Figure(
+        layout = go.Layout(
+            title = f'Polynomial Function of {n_samples} Samples With and Without Noise',
+            xaxis_title = f'Samples ~ Unif[{LOW_UNIFORM}, {HIGH_UNIFORM}]',
+            yaxis_title = 'Polynomial Function Values',
+        )
+    )
+    fig.add_trace(
+        go.Scatter(x=x, y=model_func(x, 0), mode='markers', 
+        name='No Noise', showlegend=True)
+    )
+    fig.add_trace(
+        go.Scatter(x=X_train, y=y_train, mode='markers', marker=dict(color='red'),
+        name='Noisy Train', showlegend=True)
+    )
+    fig.add_trace(
+        go.Scatter(x=X_test, y=y_test, mode='markers', marker=dict(color='green'), 
+        name='Noisy Test', showlegend=True)
+    )
+    # fig.show()
 
     # Question 2 - Perform CV for polynomial fitting with degrees 0,1,...,10
-    raise NotImplementedError()
+    
+    # TODO: Fix!!!
+    train_errs, validate_errs = [], []
+    for k in range(K_DEGS + 1):
+        train_err, validate_err = cross_validate(
+            PolynomialFitting(k), X_train, y_train, mean_square_error
+            ) 
+        train_errs.append(train_err)
+        validate_errs.append(validate_err)
+    
+    fig = go.Figure(
+        layout = go.Layout(
+            title = 'Errors of Train and Validation Using 5-Fold Cross Validation',
+            xaxis_title = 'Degree',
+            yaxis_title = 'Mean Error',
+        )
+    )
+    fig.add_trace(
+        go.Scatter(x=np.arange(K_DEGS + 1), y=train_errs, 
+        mode='lines+markers', name='Mean Train Error', showlegend=True)
+    )
+    fig.add_trace(
+        go.Scatter(x=np.arange(K_DEGS + 1), y=validate_errs, 
+        mode='lines+markers', name='Mean Validate Error', showlegend=True)
+    )
+    fig.show()
 
+    best_validation_k = np.argmin(validate_errs) 
+    
     # Question 3 - Using best value of k, fit a k-degree polynomial model and report test error
-    raise NotImplementedError()
-
+    model = PolynomialFitting(best_validation_k).fit(X_train, y_train)
+    test_error = round(model.loss(X_test, y_test), 2)
+    print(f'Best K for validation: {best_validation_k}')
+    print(f'Test Error: {test_error}')
 
 def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 500):
     """
@@ -61,4 +123,6 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
 
 if __name__ == '__main__':
     np.random.seed(0)
-    raise NotImplementedError()
+    select_polynomial_degree(n_samples=100, noise=5)
+    select_polynomial_degree(n_samples=100, noise=0)
+    select_polynomial_degree(n_samples=1500, noise=10)
